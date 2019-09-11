@@ -6,6 +6,10 @@
   "scripts": {
     "watch": "nodemon index.js",
     "start": "node index.js",
+    "build:ui": "rm -rf build && cd ../../fullstack_open_2019/part2/puhelinluettelo && npm run build --prod && cp -r build ../../../fs_part3/fullstack_open_part3_2019/",
+    "deploy": "git push heroku master",
+    "deploy:full": "npm run build:ui && git add . && git commit -m uibuild && git push && npm run deploy",
+    "logs:prod": "heroku logs --tail",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "repository": {
