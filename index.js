@@ -1,6 +1,8 @@
+require('dotenv').config();
 const express = require('express');
 const morgan = require('morgan');
 const cors = require('cors');
+const Person = require('./models/person');
 
 const app = express()
 
@@ -19,40 +21,14 @@ app.use(bodyParser.json());
 app.use(cors());
 app.use(express.static('build'));
 
-const persons = [
-    {
-      "name": "Ada Lovelace",
-      "number": "39-44-5323523",
-      "id": 2
-    },
-    {
-      "name": "Dan Abramov",
-      "number": "12-43-234345",
-      "id": 3
-    },
-    {
-      "name": "Mary Poppendieck",
-      "number": "39-23-6423122",
-      "id": 4
-    },
-    {
-      "name": "sdadf",
-      "number": "adsfadsf",
-      "id": 5
-    }
-];
-
-const getNewId = () => {
-  function getRandomFloat(min, max) {
-    return Math.random() * (max - min) + min;
-  }
-
-  const randomNumber = getRandomFloat(10, 65536);
-  return Math.floor(randomNumber);
-}
 
 app.get('/api/persons', (req, res) => {
-  res.json(persons);
+  Person
+    .find({})
+    .then(people => {
+      const response = people.map(person => person.toJSON());
+      res.json(response);
+    });
 });
 
 app.post('/api/persons', (req, res) => {
@@ -60,53 +36,75 @@ app.post('/api/persons', (req, res) => {
   if (!body.name || !body.number) {
     return res.status(400).send('Body should include fields "name" and "number"');
   }
-  const personFound = persons.find(element => element.name === body.name);
-  if (personFound) {
-    return res.status(400).send({
-      error: `Person with name ${body.name} already exists`,
-    });
-  }
 
-  const newPerson = {
+  const newPerson = new Person({
     name: body.name,
     number: body.number,
-    id: getNewId(), 
-  };
-  persons.push(newPerson);
-
-  res.json(newPerson);
+  });
+  newPerson.save()
+    .then(savedPerson => {
+      console.log(savedPerson);
+      res.json(savedPerson.toJSON());
+    });
   
 });
 
-app.delete('/api/persons/:id', (req, res) => {
-  const numberId = Number(req.params.id);
-  const index = persons.findIndex(element => element.id === numberId);
-  console.log('index of person:', index);
-  if (index > -1) {
-    persons.splice(index, 1); // splice in-place, not the best idea but works for now
-    return res.status(204).send();
+app.delete('/api/persons/:id', (req, res, next) => {
+  Person.findByIdAndRemove(req.params.id)
+    .then(result => {
+      res.status(204).send();
+    })
+    .catch(err => next(err));
+});
+
+app.put('/api/persons/:id', (req, res, next) => {
+  const { name, number } = req.body;
+  if (!name || !number) {
+    return res.status(400).send('Body should include fields "name" and "number"');
   }
-  res.status(404).send();
+
+  const personUpdates = { name, number };
+
+  Person.findByIdAndUpdate(req.params.id, personUpdates, {new: true})
+    .then(updatedPerson => {
+      res.json(updatedPerson.toJSON());
+    })
+    .catch(err => next(err));
 });
 
-app.get('/api/persons/:id', (req, res) => {
-  const numberId = Number(req.params.id);
-  const person = persons.find(element => element.id === numberId);
-  if (person) {
-    return res.json(person);
+app.get('/api/persons/:id', (req, res, next) => {
+  Person.findById(req.params.id)
+    .then(person => {
+      if (person) res.json(person.toJSON());
+      else res.status(404).send();
+    })
+    .catch(err => next(err));
+});
+
+app.get('/api/info', (req, res, next) => {
+  Person.find({})
+    .then(people => {
+      let htmlResponse = `<p>Phonebook has info on ${people.length} people</p>`
+      htmlResponse = `${htmlResponse}<br>`
+      htmlResponse = `${htmlResponse} ${(new Date()).toString()}`;
+      res.send(htmlResponse);
+    })
+    .catch(err => next(err));
+});
+
+const errorHandler = (err, req, res, next) => {
+  console.error(err.message);
+
+  // MongoDB id errors
+  if (err.name === 'CastError' && err.kind == 'ObjectId') {
+    return res.status(400).send({ error: 'malformatted id' });
   }
-  res.status(404).send();
-  
-});
 
-app.get('/api/info', (req, res) => {
-  let htmlResponse = `<p>Phonebook has info on ${persons.length} people</p>`
-  htmlResponse = `${htmlResponse}<br>`
-  htmlResponse = `${htmlResponse} ${(new Date()).toString()}`;
-  res.send(htmlResponse);
-});
+  next(err);
+}
 
-// const port = 3001
+app.use(errorHandler);
+
 const port = process.env.PORT || 3001;
 app.listen(port)
 console.log(`Server running on port ${port}`)
