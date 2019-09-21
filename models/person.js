@@ -1,4 +1,5 @@
 const mongoose = require('mongoose');
+const uniqueValidator = require('mongoose-unique-validator');
 
 const url = process.env.MONGODB_URI;
 
@@ -10,7 +11,7 @@ if (!url) {
 mongoose
   .connect(url, { useNewUrlParser: true })
   .then(result => {
-    console.log('connected to Mongodb');
+    console.log('connected to Mongodb at url', process.env.MONGODB_URI);
   })
   .catch(err => {
     console.log('Error connecting to Mongodb:', err.message);
@@ -18,8 +19,8 @@ mongoose
 
 
 const personSchema = new mongoose.Schema({
-  name: String,
-  number: String,
+  name: {type: String, unique: true, required: true},
+  number: {type: String, required: true},
 });
 
 // transform the object to form suitable for frontend
@@ -31,6 +32,8 @@ personSchema.set('toJSON', {
     delete returnedObject.__v;
   },
 });
+
+personSchema.plugin(uniqueValidator);
 
 const Person = mongoose.model('Person', personSchema);
 
