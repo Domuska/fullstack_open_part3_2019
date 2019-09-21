@@ -32,6 +32,7 @@ personSchema.set('toJSON', {
     copy.id = returnedObject._id.toString(); // eslint-disable-line
     delete copy._id; // eslint-disable-line
     delete copy.__v; // eslint-disable-line
+    return copy;
   },
 });
 
