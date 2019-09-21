@@ -31,7 +31,7 @@ app.get('/api/persons', (req, res) => {
     });
 });
 
-app.post('/api/persons', (req, res) => {
+app.post('/api/persons', (req, res, next) => {
   const { body } = req;
   if (!body.name || !body.number) {
     return res.status(400).send('Body should include fields "name" and "number"');
@@ -45,7 +45,8 @@ app.post('/api/persons', (req, res) => {
     .then(savedPerson => {
       console.log(savedPerson);
       res.json(savedPerson.toJSON());
-    });
+    })
+    .catch(err => next(err));
   
 });
 
@@ -98,6 +99,10 @@ const errorHandler = (err, req, res, next) => {
   // MongoDB id errors
   if (err.name === 'CastError' && err.kind == 'ObjectId') {
     return res.status(400).send({ error: 'malformatted id' });
+  }
+
+  if(err.name === 'ValidationError') {
+    return res.status(400).send({error: err.message});
   }
 
   next(err);
