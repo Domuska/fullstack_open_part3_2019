@@ -10,26 +10,32 @@ if (!url) {
 
 mongoose
   .connect(url, { useNewUrlParser: true })
-  .then(result => {
+  .then(() => {
     console.log('connected to Mongodb at url', process.env.MONGODB_URI);
   })
-  .catch(err => {
+  .catch((err) => {
     console.log('Error connecting to Mongodb:', err.message);
   });
 
 
 const personSchema = new mongoose.Schema({
-  name: {type: String, unique: true, required: true, minlength: 3},
-  number: {type: String, required: true, minlength: 8},
+  name: {
+    type: String, unique: true, required: true, minlength: 3,
+  },
+  number: { type: String, required: true, minlength: 8 },
 });
 
 // transform the object to form suitable for frontend
 personSchema.set('toJSON', {
   transform: (document, returnedObject) => {
-    returnedObject.id = returnedObject._id.toString();
+    const copy = { ...returnedObject };
+    copy.id = returnedObject._id.toString(); // eslint-disable-line
+    // returnedObject.id = returnedObject._id.toString();
     // delete _id & version field from the object
-    delete returnedObject._id;
-    delete returnedObject.__v;
+    // delete returnedObject._id;
+    // delete returnedObject.__v;
+    delete copy._id; // eslint-disable-line
+    delete copy.__v; // eslint-disable-line
   },
 });
 
