@@ -30,10 +30,6 @@ personSchema.set('toJSON', {
   transform: (document, returnedObject) => {
     const copy = { ...returnedObject };
     copy.id = returnedObject._id.toString(); // eslint-disable-line
-    // returnedObject.id = returnedObject._id.toString();
-    // delete _id & version field from the object
-    // delete returnedObject._id;
-    // delete returnedObject.__v;
     delete copy._id; // eslint-disable-line
     delete copy.__v; // eslint-disable-line
   },
